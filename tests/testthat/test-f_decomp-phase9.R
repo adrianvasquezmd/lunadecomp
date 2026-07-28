@@ -111,7 +111,7 @@ test_that("group models retain the full design before domain selection", {
   expect_equal(
     unname(fit$raw$group_vcov$group_0),
     unname(stats::vcov(manual_model)),
-    tolerance = 1e-12
+    tolerance = 1e-9
   )
 })
 

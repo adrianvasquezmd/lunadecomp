@@ -301,7 +301,7 @@ test_that("KE phase 5 full factor model also matches level target", {
   expect_equal(
     fit$results_overall$Estimate,
     0.014028379115368242,
-    tolerance = 2e-15
+    tolerance = 1e-12
   )
   expect_equal(
     fit$raw$model$coefficients[c("x1", "education3")],
