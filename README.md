@@ -165,6 +165,15 @@ The detailed Fairlie table reports both:
 - `% Contribution Explained`: contribution divided by the total explained component;
 - `% Contribution Total`: contribution divided by the observed total gap.
 
+For a survey bootstrap in `oby_decomp()`, `f_decomp()`, `wvw_decomp()`, or
+`ke_decomp()`, `lonely_psu` does not control Rao--Wu replicate construction.
+If a stratum contains one PSU and that PSU can defensibly be treated as
+selected with certainty, use `bootstrap_singleton = "certainty"`. The
+singleton is then held fixed with replicate factor 1 and contributes zero
+first-stage variance. The default, `bootstrap_singleton = "fail"`, requires at
+least two PSUs per stratum and stops instead of making that assumption
+silently.
+
 ### Wagstaff-type decomposition
 
 Use `wvw_decomp()` to decompose a socioeconomic concentration-type index into determinant-specific contributions.

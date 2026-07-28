@@ -164,12 +164,19 @@
 #' `raw$replication$generator_scale` for auditability.
 #'
 #' Both survey replicate methods use PSUs minus strata degrees of freedom.
-#' They require at least two PSUs in every stratum and represent an
-#' ultimate-cluster, with-replacement design with one final sampling weight.
-#' They are not a first-stage PPS bootstrap and do not represent FPCs,
-#' calibration replicate weights, or lower sampling stages. A failed survey
-#' replicate stops estimation by default; `relax = TRUE` permits an explicitly
-#' exploratory complete-replicate deletion and rescaling.
+#' Jackknife requires at least two PSUs in every stratum. Bootstrap has the
+#' same requirement by default; with
+#' `bootstrap_singleton = "certainty"`,
+#' [svrep::as_bootstrap_design()] holds a singleton PSU fixed with replicate
+#' factor 1 and assigns it zero first-stage variance, while regular strata
+#' retain Rao--Wu \eqn{n_h-1} resampling. This should be selected only when
+#' treating the singleton as a certainty PSU is substantively defensible.
+#' These methods represent an ultimate-cluster, with-replacement design with
+#' one final sampling weight. They are not a first-stage PPS bootstrap and do
+#' not represent FPCs, calibration replicate weights, or lower sampling
+#' stages. A failed survey replicate stops estimation by default;
+#' `relax = TRUE` permits an explicitly exploratory complete-replicate deletion
+#' and rescaling.
 #'
 #' @param data A data frame containing the health outcome, socioeconomic
 #' variable, covariates, and optional survey design variables.
@@ -216,8 +223,15 @@
 #' `vce_method = "bootstrap"`.
 #' @param lonely_psu Character string. Taylor-linearization handling of strata
 #' with one PSU. Options are `"fail"`, `"remove"`, `"certainty"`, `"adjust"`,
-#' and `"average"`. Survey jackknife and bootstrap instead require at least two
-#' PSUs in every stratum.
+#' and `"average"`. Survey jackknife requires at least two PSUs in every
+#' stratum; survey-bootstrap singleton handling is controlled separately by
+#' `bootstrap_singleton`.
+#' @param bootstrap_singleton Character string. Handling of a stratum with one
+#' PSU in survey bootstrap. Options are `"fail"` (the default) and
+#' `"certainty"`. `"fail"` requires at least two PSUs per stratum and stops
+#' rather than making an assumption. `"certainty"` fixes the singleton at
+#' replicate factor 1 through [svrep::as_bootstrap_design()], assigning zero
+#' first-stage variance to that stratum.
 #' @param level Numeric. Confidence level for confidence intervals. Default is
 #' `0.95`.
 #' @param seed Optional integer. Random seed for reproducibility of replicate
@@ -323,7 +337,8 @@ ke_decomp <- function(
     dep_min = NULL, dep_max = NULL, use_svy = FALSE, weight_var = NULL,
     strata_var = NULL, psu_var = NULL, vce_method = "linearized",
     boot_reps = 500, lonely_psu = "adjust", level = 0.95,
-    seed = NULL, relax = FALSE, quiet = FALSE
+    seed = NULL, relax = FALSE, quiet = FALSE,
+    bootstrap_singleton = "fail"
 ) {
 
   is_scalar_character <- function(value) {
@@ -409,12 +424,21 @@ ke_decomp <- function(
   valid_lonely_psu <- c(
     "fail", "remove", "certainty", "adjust", "average"
   )
+  valid_bootstrap_singleton <- c("fail", "certainty")
   if (
     !is_scalar_character(vce_method) ||
       !(vce_method %in% valid_vce)
   ) {
     stop(
       "Error: vce_method must be 'linearized', 'jackknife', or 'bootstrap'."
+    )
+  }
+  if (
+    !is_scalar_character(bootstrap_singleton) ||
+      !(bootstrap_singleton %in% valid_bootstrap_singleton)
+  ) {
+    stop(
+      "Error: bootstrap_singleton must be 'fail' or 'certainty'."
     )
   }
   if (
@@ -693,16 +717,41 @@ ke_decomp <- function(
   # W2: count PSUs within strata (nested), not globally.
   n_psu    <- if(use_svy) nrow(unique(df_clean[, c("svy_strata", "svy_psu")])) else NA
   diagnostics <- list()
+  psu_per_stratum <- if (use_svy) {
+    unique_psu <- unique(
+      df_clean[, c("svy_strata", "svy_psu"), drop = FALSE]
+    )
+    table(unique_psu$svy_strata)
+  } else {
+    integer(0)
+  }
+  bootstrap_singleton_strata <- if (
+    use_svy && vce_method == "bootstrap"
+  ) {
+    names(psu_per_stratum)[psu_per_stratum < 2L]
+  } else {
+    character(0)
+  }
+  bootstrap_has_singletons <- length(bootstrap_singleton_strata) > 0L
+  if (use_svy && vce_method == "bootstrap") {
+    diagnostics$bootstrap_singleton_control <- paste0(
+      "Methodology Note: lonely_psu does not control Rao-Wu bootstrap ",
+      "replicate construction. Survey-bootstrap singleton strata are ",
+      "controlled by bootstrap_singleton = '",
+      bootstrap_singleton,
+      "'."
+    )
+    if (!quiet) message(diagnostics$bootstrap_singleton_control)
+  }
 
   if (
     use_svy &&
       vce_method %in% c("jackknife", "bootstrap")
   ) {
-    unique_psu <- unique(
-      df_clean[, c("svy_strata", "svy_psu"), drop = FALSE]
-    )
-    psu_per_stratum <- table(unique_psu$svy_strata)
-    if (any(psu_per_stratum < 2L)) {
+    if (
+      vce_method == "jackknife" &&
+        any(psu_per_stratum < 2L)
+    ) {
       stop(
         "Error: survey replication requires at least two PSUs in every ",
         "stratum. Use Taylor linearization with an explicit lonely_psu ",
@@ -710,6 +759,40 @@ ke_decomp <- function(
         "appropriate external replicate-weight design.",
         call. = FALSE
       )
+    }
+    if (
+      vce_method == "bootstrap" &&
+        bootstrap_has_singletons &&
+        bootstrap_singleton == "fail"
+    ) {
+      stop(
+        "Error: Rao-Wu survey bootstrap requires at least two PSUs in ",
+        "every stratum. Set bootstrap_singleton = \"certainty\" only when ",
+        "assigning zero first-stage variance to singleton strata is ",
+        "defensible; otherwise collapse or redesign singleton strata, or ",
+        "supply an appropriate external replicate-weight design.",
+        call. = FALSE
+      )
+    }
+    if (
+      vce_method == "bootstrap" &&
+        bootstrap_has_singletons &&
+        bootstrap_singleton == "certainty"
+    ) {
+      diagnostics$bootstrap_singleton_assumption <- sprintf(
+        paste0(
+          "Bootstrap Assumption: %d singleton-PSU stratum/strata are held ",
+          "fixed with replicate factor 1 and contribute zero first-stage ",
+          "variance (bootstrap_singleton = 'certainty')."
+        ),
+        length(bootstrap_singleton_strata)
+      )
+      if (!quiet) {
+        warning(
+          diagnostics$bootstrap_singleton_assumption,
+          call. = FALSE
+        )
+      }
     }
     diagnostics$survey_replication_scope <- paste(
       "Survey Replication Scope: ultimate-cluster variance using one",
@@ -1091,6 +1174,7 @@ ke_decomp <- function(
     survey_generator_scale <- NA_real_
     survey_effective_scale <- NA_real_
     survey_replicate_type <- NULL
+    survey_replicate_engine <- NULL
     replicate_center_groups <- NULL
     replicate_factors_audit <- NULL
     if (ordinary_resampling) {
@@ -1112,17 +1196,33 @@ ke_decomp <- function(
       }
     } else {
       des_rep <- if (vce_method == "bootstrap") {
-        survey::as.svrepdesign(
-          des_base,
-          type = "subbootstrap",
-          replicates = boot_reps
-        )
+        if (
+          bootstrap_has_singletons &&
+            bootstrap_singleton == "certainty"
+        ) {
+          survey_replicate_engine <- "svrep::as_bootstrap_design"
+          svrep::as_bootstrap_design(
+            des_base,
+            type = "Rao-Wu-Yue-Beaumont",
+            replicates = boot_reps,
+            mse = FALSE,
+            samp_method_by_stage = "SRSWR"
+          )
+        } else {
+          survey_replicate_engine <- "survey::as.svrepdesign"
+          survey::as.svrepdesign(
+            des_base,
+            type = "subbootstrap",
+            replicates = boot_reps
+          )
+        }
       } else {
         jackknife_type <- if (is.null(form_strata)) {
           "JK1"
         } else {
           "JKn"
         }
+        survey_replicate_engine <- "survey::as.svrepdesign"
         survey::as.svrepdesign(
           des_base,
           type = jackknife_type
@@ -1135,7 +1235,14 @@ ke_decomp <- function(
       survey_replicate_type <- if (
         vce_method == "bootstrap"
       ) {
-        "Rao-Wu rescaled bootstrap"
+        if (
+          bootstrap_has_singletons &&
+            bootstrap_singleton == "certainty"
+        ) {
+          "Rao-Wu-Yue-Beaumont bootstrap with singleton certainty"
+        } else {
+          "Rao-Wu rescaled bootstrap"
+        }
       } else {
         jackknife_type
       }
@@ -1462,6 +1569,11 @@ ke_decomp <- function(
       } else {
         "survey::withReplicates"
       },
+      generator_engine = if (!ordinary_resampling) {
+        survey_replicate_engine
+      } else {
+        NULL
+      },
       simulation = if (
         ordinary_resampling && vce_method == "bootstrap"
       ) {
@@ -1490,6 +1602,25 @@ ke_decomp <- function(
         "survey replicate weight"
       },
       survey_replicate_type = survey_replicate_type,
+      bootstrap_singleton = list(
+        requested = bootstrap_singleton,
+        applied = !ordinary_resampling &&
+          vce_method == "bootstrap" &&
+          bootstrap_has_singletons &&
+          bootstrap_singleton == "certainty",
+        n_singleton_strata = length(bootstrap_singleton_strata),
+        singleton_strata = bootstrap_singleton_strata,
+        first_stage_variance = if (
+          !ordinary_resampling &&
+            vce_method == "bootstrap" &&
+            bootstrap_has_singletons &&
+            bootstrap_singleton == "certainty"
+        ) {
+          "zero for singleton strata"
+        } else {
+          "not modified"
+        }
+      ),
       estimates = res_matrix$replicates,
       valid_estimates = reps,
       valid = valid_idx,
@@ -1715,6 +1846,7 @@ ke_decomp <- function(
       vce_method = vce_method,
       boot_reps = boot_reps,
       lonely_psu = lonely_psu,
+      bootstrap_singleton = bootstrap_singleton,
       level = level,
       seed = seed,
       relax = relax,

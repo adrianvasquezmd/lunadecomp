@@ -39,6 +39,7 @@ Imports:
     tibble,
     rlang,
     survey,
+    svrep (>= 0.9.1),
     MASS,
     Matrix,
     stats,
@@ -51,7 +52,7 @@ Suggests:
     rineq
 Config/testthat/edition: 3
 Depends:
-    R (>= 3.5)
+    R (>= 4.1)
 LazyData: true
 URL: https://github.com/adrianvasquezmd/lunadecomp
 BugReports: https://github.com/adrianvasquezmd/lunadecomp/issues

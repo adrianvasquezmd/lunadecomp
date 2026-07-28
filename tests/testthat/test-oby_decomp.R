@@ -1261,21 +1261,8 @@ test_that("replicate VCE uses Stata-compatible scales and centering", {
 
 test_that("Rao-Wu survey bootstrap rejects singleton PSU strata", {
   validation_data <- make_oby_survey_design_data()
-  validation_data$singleton_strata <- ifelse(
-    validation_data$strata == 1,
-    "singleton",
-    paste0(
-      "other_",
-      validation_data$strata,
-      "_",
-      validation_data$psu_unique
-    )
-  )
-  validation_data$singleton_psu <- ifelse(
-    validation_data$strata == 1,
-    "one",
-    validation_data$psu_unique
-  )
+  validation_data$singleton_psu <- validation_data$psu_unique
+  validation_data$singleton_psu[validation_data$strata == 1] <- "one"
 
   expect_error(
     oby_decomp(
@@ -1284,7 +1271,7 @@ test_that("Rao-Wu survey bootstrap rejects singleton PSU strata", {
       group_var = "group",
       indep_vars = c("x1", "x2"),
       weight_var = "weight",
-      strata_var = "singleton_strata",
+      strata_var = "strata",
       psu_var = "singleton_psu",
       vce_method = "bootstrap",
       boot_reps = 8,
@@ -1292,6 +1279,69 @@ test_that("Rao-Wu survey bootstrap rejects singleton PSU strata", {
       quiet = TRUE
     ),
     "Rao-Wu survey bootstrap requires at least two PSUs in every stratum"
+  )
+})
+
+test_that("OBY survey bootstrap supports an explicit singleton-certainty rule", {
+  validation_data <- make_oby_survey_design_data()
+  validation_data$singleton_psu <- validation_data$psu_unique
+  validation_data$singleton_psu[validation_data$strata == 1] <- "one"
+
+  fit <- oby_decomp(
+    data = validation_data,
+    dep_var = "y",
+    group_var = "group",
+    indep_vars = c("x1", "x2"),
+    weight_var = "weight",
+    strata_var = "strata",
+    psu_var = "singleton_psu",
+    vce_method = "bootstrap",
+    boot_reps = 12,
+    seed = 271805,
+    bootstrap_singleton = "certainty",
+    quiet = TRUE
+  )
+
+  replication <- fit$raw$replication
+  expect_identical(replication$engine, "survey::withReplicates")
+  expect_identical(
+    replication$generator_engine,
+    "svrep::as_bootstrap_design"
+  )
+  expect_identical(
+    replication$survey_replicate_type,
+    "Rao-Wu-Yue-Beaumont bootstrap with singleton certainty"
+  )
+  expect_true(replication$bootstrap_singleton$applied)
+  expect_equal(replication$bootstrap_singleton$n_singleton_strata, 1)
+  expect_identical(
+    replication$bootstrap_singleton$first_stage_variance,
+    "zero for singleton strata"
+  )
+  expect_equal(replication$scale, 1 / 12, tolerance = 0)
+  expect_equal(replication$generator_scale, 1 / 12, tolerance = 0)
+  expect_true(all(is.finite(fit$results_overall$Estimate)))
+  expect_match(
+    fit$diagnostics$bootstrap_singleton_control,
+    "lonely_psu does not control Rao-Wu bootstrap"
+  )
+  expect_match(
+    fit$diagnostics$bootstrap_singleton_assumption,
+    "zero first-stage variance"
+  )
+})
+
+test_that("OBY validates bootstrap_singleton independently", {
+  expect_error(
+    oby_decomp(
+      data = make_oby_survey_design_data(),
+      dep_var = "y",
+      group_var = "group",
+      indep_vars = c("x1", "x2"),
+      bootstrap_singleton = "average",
+      quiet = TRUE
+    ),
+    "bootstrap_singleton must be one of"
   )
 })
 

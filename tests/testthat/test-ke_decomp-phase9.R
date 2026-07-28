@@ -301,6 +301,69 @@ test_that("KE phase 9 rejects singleton strata for replication", {
   )
 })
 
+test_that("KE phase 9 bootstrap supports singleton certainty through svrep", {
+  data <- .phase9_ke_data()
+  data$psu[data$strata == 1] <- 1
+  bootstrap_reps <- 12L
+
+  fit <- .phase9_ke_fit(
+    data,
+    method = "bootstrap",
+    boot_reps = bootstrap_reps,
+    bootstrap_singleton = "certainty"
+  )
+  replication <- fit$raw$replication
+
+  expect_identical(replication$engine, "survey::withReplicates")
+  expect_identical(
+    replication$generator_engine,
+    "svrep::as_bootstrap_design"
+  )
+  expect_identical(
+    replication$survey_replicate_type,
+    "Rao-Wu-Yue-Beaumont bootstrap with singleton certainty"
+  )
+  expect_true(replication$bootstrap_singleton$applied)
+  expect_equal(replication$bootstrap_singleton$n_singleton_strata, 1)
+  expect_equal(replication$generator_scale, 1 / bootstrap_reps)
+  expect_equal(replication$effective_scale, 1 / bootstrap_reps)
+
+  factors <- replication$replicate_factors
+  source_rows <- fit$raw$sample$analytic_source_rows
+  analytic_data <- data[source_rows, , drop = FALSE]
+  expect_equal(
+    unname(factors[analytic_data$strata == 1, , drop = FALSE]),
+    matrix(
+      1,
+      nrow = sum(analytic_data$strata == 1),
+      ncol = bootstrap_reps
+    ),
+    tolerance = 1e-12
+  )
+  for (stratum in setdiff(unique(analytic_data$strata), 1)) {
+    rows <- analytic_data$strata == stratum
+    psu_factors <- vapply(
+      split(factors[rows, 1], analytic_data$psu[rows]),
+      function(values) unique(values)[1],
+      numeric(1)
+    )
+    expect_equal(sum(psu_factors), 4, tolerance = 1e-12)
+    expect_equal(
+      psu_factors / (4 / 3),
+      round(psu_factors / (4 / 3)),
+      tolerance = 1e-12
+    )
+  }
+  expect_match(
+    fit$diagnostics$bootstrap_singleton_control,
+    "lonely_psu does not control Rao-Wu bootstrap"
+  )
+  expect_match(
+    fit$diagnostics$bootstrap_singleton_assumption,
+    "zero first-stage variance"
+  )
+})
+
 test_that("KE phase 9 does not silently discard survey replicates", {
   n <- 18L
   data <- data.frame(

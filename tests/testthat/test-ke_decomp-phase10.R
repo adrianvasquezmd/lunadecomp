@@ -103,6 +103,10 @@ test_that("KE phase 10 validates scalar API arguments", {
   expect_error(base(correction = NA_character_), "correction")
   expect_error(base(index_type = character()), "index_type")
   expect_error(base(lonely_psu = "invented"), "lonely_psu")
+  expect_error(
+    base(bootstrap_singleton = "average"),
+    "bootstrap_singleton"
+  )
   expect_error(base(boot_reps = "20", vce_method = "bootstrap"),
                "boot_reps")
   expect_error(

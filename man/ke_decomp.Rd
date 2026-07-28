@@ -25,7 +25,8 @@ ke_decomp(
   level = 0.95,
   seed = NULL,
   relax = FALSE,
-  quiet = FALSE
+  quiet = FALSE,
+  bootstrap_singleton = "fail"
 )
 }
 \arguments{
@@ -90,8 +91,9 @@ variable.}
 
 \item{lonely_psu}{Character string. Taylor-linearization handling of strata
 with one PSU. Options are \code{"fail"}, \code{"remove"}, \code{"certainty"}, \code{"adjust"},
-and \code{"average"}. Survey jackknife and bootstrap instead require at least two
-PSUs in every stratum.}
+and \code{"average"}. Survey jackknife requires at least two PSUs in every
+stratum; survey-bootstrap singleton handling is controlled separately by
+\code{bootstrap_singleton}.}
 
 \item{level}{Numeric. Confidence level for confidence intervals. Default is
 \code{0.95}.}
@@ -108,6 +110,13 @@ number stream.}
 diagnostics rather than stopping execution.}
 
 \item{quiet}{Logical. If \code{TRUE}, suppresses console output and progress bars.}
+
+\item{bootstrap_singleton}{Character string. Handling of a stratum with one
+PSU in survey bootstrap. Options are \code{"fail"} (the default) and
+\code{"certainty"}. \code{"fail"} requires at least two PSUs per stratum and stops
+rather than making an assumption. \code{"certainty"} fixes the singleton at
+replicate factor 1 through \code{\link[svrep:as_bootstrap_design]{svrep::as_bootstrap_design()}}, assigning zero
+first-stage variance to that stratum.}
 }
 \value{
 A named list. The inferential columns (\code{Term}, \code{Estimate}, \code{Std_Error},
@@ -313,12 +322,19 @@ the replicate mean and uses Stata's \verb{svy bootstrap} finite-replicate scale
 \code{raw$replication$generator_scale} for auditability.
 
 Both survey replicate methods use PSUs minus strata degrees of freedom.
-They require at least two PSUs in every stratum and represent an
-ultimate-cluster, with-replacement design with one final sampling weight.
-They are not a first-stage PPS bootstrap and do not represent FPCs,
-calibration replicate weights, or lower sampling stages. A failed survey
-replicate stops estimation by default; \code{relax = TRUE} permits an explicitly
-exploratory complete-replicate deletion and rescaling.
+Jackknife requires at least two PSUs in every stratum. Bootstrap has the
+same requirement by default; with
+\code{bootstrap_singleton = "certainty"},
+\code{\link[svrep:as_bootstrap_design]{svrep::as_bootstrap_design()}} holds a singleton PSU fixed with replicate
+factor 1 and assigns it zero first-stage variance, while regular strata
+retain Rao--Wu \eqn{n_h-1} resampling. This should be selected only when
+treating the singleton as a certainty PSU is substantively defensible.
+These methods represent an ultimate-cluster, with-replacement design with
+one final sampling weight. They are not a first-stage PPS bootstrap and do
+not represent FPCs, calibration replicate weights, or lower sampling
+stages. A failed survey replicate stops estimation by default;
+\code{relax = TRUE} permits an explicitly exploratory complete-replicate deletion
+and rescaling.
 }
 
 \examples{

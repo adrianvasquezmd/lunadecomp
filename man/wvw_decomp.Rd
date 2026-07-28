@@ -26,7 +26,8 @@ wvw_decomp(
   level = 0.95,
   seed = NULL,
   relax = FALSE,
-  quiet = FALSE
+  quiet = FALSE,
+  bootstrap_singleton = "fail"
 )
 }
 \arguments{
@@ -96,8 +97,9 @@ the declared survey design.}
 
 \item{lonely_psu}{Character string. Taylor handling of strata with one PSU.
 Options are \code{"fail"}, \code{"remove"}, \code{"certainty"}, \code{"adjust"}, and
-\code{"average"}. Survey jackknife and bootstrap instead require at least two
-PSUs in every stratum.}
+\code{"average"}. Survey jackknife requires at least two PSUs in every stratum;
+survey-bootstrap singleton handling is controlled separately by
+\code{bootstrap_singleton}.}
 
 \item{level}{Numeric. Confidence level for confidence intervals. Default is
 \code{0.95}.}
@@ -111,6 +113,13 @@ restored on exit.}
 diagnostics or warnings instead of stopping execution.}
 
 \item{quiet}{Logical. If \code{TRUE}, suppresses console output.}
+
+\item{bootstrap_singleton}{Character string. Handling of a stratum with one
+PSU in survey bootstrap. Options are \code{"fail"} (the default) and
+\code{"certainty"}. \code{"fail"} requires at least two PSUs per stratum and stops
+rather than making an assumption. \code{"certainty"} fixes the singleton at
+replicate factor 1 through \code{\link[svrep:as_bootstrap_design]{svrep::as_bootstrap_design()}}, assigning zero
+first-stage variance to that stratum.}
 }
 \value{
 An invisible named list. The inferential columns (\code{Term}, \code{Estimate},
@@ -368,12 +377,18 @@ replicate mean, and uses final scale \code{1 / B}. Both survey-replicate methods
 use \verb{number of PSUs - number of strata} degrees of freedom. A sampling
 weight is never interpreted as an ordinary frequency-bootstrap weight.
 
-Survey replication requires at least two PSUs in every stratum and stops if
-any model replicate fails; \code{relax = TRUE} permits only an explicitly
-exploratory failed-replicate adjustment. Taylor linearization supports
-lonely-PSU rules through \code{lonely_psu}: \code{"adjust"} corresponds to Stata
-\code{singleunit(centered)}, \code{"certainty"} and \code{"remove"} to
-\code{singleunit(certainty)}, and \code{"average"} to \code{singleunit(scaled)}.
+Survey jackknife requires at least two PSUs in every stratum. Survey
+bootstrap has the same requirement by default, but
+\code{bootstrap_singleton = "certainty"} uses
+\code{\link[svrep:as_bootstrap_design]{svrep::as_bootstrap_design()}} to hold a singleton PSU fixed with replicate
+factor 1 and assign it zero first-stage variance. Regular strata retain
+Rao--Wu \eqn{n_h-1} resampling. This should be selected only when treating
+the singleton as a certainty PSU is substantively defensible. Survey
+replication stops if any model replicate fails; \code{relax = TRUE} permits only
+an explicitly exploratory failed-replicate adjustment. Taylor
+linearization supports lonely-PSU rules through \code{lonely_psu}: \code{"adjust"}
+corresponds to Stata \code{singleunit(centered)}, \code{"certainty"} and \code{"remove"}
+to \code{singleunit(certainty)}, and \code{"average"} to \code{singleunit(scaled)}.
 
 The built-in survey contract is an ultimate-cluster, with-replacement
 approximation with one final weight, optional strata, and one PSU stage.

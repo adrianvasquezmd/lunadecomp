@@ -183,16 +183,11 @@ test_that("survey bootstrap uses Rao-Wu rescaled PSU weights", {
 
 test_that("Rao-Wu bootstrap rejects singleton PSU strata explicitly", {
   data <- phase9_survey_data()
-  data$singleton_strata <- ifelse(
-    data$strata == 1,
-    1,
-    data$strata + data$psu_within_stratum / 10
-  )
-  data$singleton_psu <- ifelse(
-    data$strata == 1,
-    1,
-    data$psu_within_stratum
-  )
+  data <- data[
+    data$strata != 1 | data$psu_within_stratum == 1,
+    ,
+    drop = FALSE
+  ]
 
   expect_error(
     f_decomp(
@@ -201,8 +196,8 @@ test_that("Rao-Wu bootstrap rejects singleton PSU strata explicitly", {
       group_var = "group",
       indep_vars = c("x1", "x2"),
       weight_var = "weight",
-      psu_var = "singleton_psu",
-      strata_var = "singleton_strata",
+      psu_var = "psu",
+      strata_var = "strata",
       vce_method = "bootstrap",
       boot_reps = 8,
       reps = 2,
@@ -210,5 +205,107 @@ test_that("Rao-Wu bootstrap rejects singleton PSU strata explicitly", {
       quiet = TRUE
     ),
     "requires at least two PSUs in every stratum"
+  )
+})
+
+test_that("survey bootstrap can treat singleton PSUs as certainty with svrep", {
+  bootstrap_reps <- 12
+  data <- phase9_survey_data()
+  data <- data[
+    data$strata != 1 | data$psu_within_stratum == 1,
+    ,
+    drop = FALSE
+  ]
+
+  fit <- f_decomp(
+    data = data,
+    dep_var = "y",
+    group_var = "group",
+    group_levels = c(0, 1),
+    indep_vars = c("x1", "x2"),
+    ref_method = "group0",
+    model_type = "logit",
+    randomize_order = FALSE,
+    weight_var = "weight",
+    psu_var = "psu",
+    strata_var = "strata",
+    vce_method = "bootstrap",
+    reps = 3,
+    boot_reps = bootstrap_reps,
+    bootstrap_singleton = "certainty",
+    seed = 920905,
+    quiet = TRUE
+  )
+
+  replication <- fit$raw$replication
+  expect_identical(
+    replication$engine,
+    "svrep::as_bootstrap_design"
+  )
+  expect_identical(
+    replication$survey_replicate_type,
+    "Rao-Wu-Yue-Beaumont bootstrap with singleton certainty"
+  )
+  expect_true(replication$bootstrap_singleton$applied)
+  expect_equal(replication$bootstrap_singleton$n_singleton_strata, 1)
+  expect_identical(
+    replication$bootstrap_singleton$first_stage_variance,
+    "zero for singleton strata"
+  )
+  expect_equal(replication$scale, 1 / bootstrap_reps)
+  expect_equal(replication$generator_scale, 1 / bootstrap_reps)
+
+  factors <- sweep(
+    replication$replicate_weights,
+    1,
+    data$weight,
+    "/"
+  )
+  singleton_rows <- data$strata == 1
+  expect_equal(
+    factors[singleton_rows, , drop = FALSE],
+    matrix(
+      1,
+      nrow = sum(singleton_rows),
+      ncol = bootstrap_reps
+    ),
+    tolerance = 1e-12
+  )
+  for (stratum in setdiff(unique(data$strata), 1)) {
+    rows <- data$strata == stratum
+    psu_factors <- vapply(
+      split(factors[rows, 1], as.character(data$psu[rows])),
+      function(values) unique(values)[[1]],
+      numeric(1)
+    )
+    expect_equal(sum(psu_factors), 4, tolerance = 1e-12)
+    expect_equal(
+      psu_factors / (4 / 3),
+      round(psu_factors / (4 / 3)),
+      tolerance = 1e-12
+    )
+  }
+  expect_match(
+    fit$diagnostics$bootstrap_singleton_control,
+    "lonely_psu does not control Rao-Wu bootstrap"
+  )
+  expect_match(
+    fit$diagnostics$bootstrap_singleton_assumption,
+    "zero first-stage variance"
+  )
+})
+
+test_that("bootstrap_singleton is validated independently of lonely_psu", {
+  expect_error(
+    f_decomp(
+      data = phase9_survey_data(),
+      dep_var = "y",
+      group_var = "group",
+      indep_vars = c("x1", "x2"),
+      vce_method = "bootstrap",
+      bootstrap_singleton = "average",
+      quiet = TRUE
+    ),
+    "bootstrap_singleton must be one of"
   )
 })

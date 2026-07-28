@@ -27,7 +27,8 @@ f_decomp(
   relax = FALSE,
   quiet = FALSE,
   group_levels = NULL,
-  pooled_anchor = "favored"
+  pooled_anchor = "favored",
+  bootstrap_singleton = "fail"
 )
 }
 \arguments{
@@ -106,7 +107,10 @@ by \code{\link[boot:boot]{boot::boot()}}; survey bootstrap continues to use repl
 the declared survey design.}
 
 \item{lonely_psu}{Character string. Handling of strata with one PSU. Options
-are \code{"fail"}, \code{"remove"}, \code{"certainty"}, \code{"adjust"}, and \code{"average"}.}
+are \code{"fail"}, \code{"remove"}, \code{"certainty"}, \code{"adjust"}, and \code{"average"}.
+This controls Taylor-linearized survey covariance and supported jackknife
+conversions; it does not control Rao--Wu bootstrap replicate construction.
+See \code{bootstrap_singleton}.}
 
 \item{level}{Numeric. Confidence level for confidence intervals. Default is
 \code{0.95}.}
@@ -131,6 +135,14 @@ the pooled reference. Options are \code{"favored"} (0), \code{"disadvantaged"} (
 and \code{"centered"} (the weighted mean of the disadvantaged-group indicator).
 Used only when \code{ref_method = "pooled"}; the default is \code{"favored"}, matching
 \verb{fairlie, pooled(groupvar)} after the favored group is coded 0.}
+
+\item{bootstrap_singleton}{Character string. Handling of a stratum with one
+PSU when \code{vce_method = "bootstrap"} is used with a survey design. Options
+are \code{"fail"} (the default) and \code{"certainty"}. \code{"fail"} requires at least
+two PSUs per stratum and stops rather than making an assumption. The latter uses
+\code{\link[svrep:as_bootstrap_design]{svrep::as_bootstrap_design()}} and fixes the singleton PSU at replicate
+factor 1, thereby assigning zero first-stage variance to that stratum. It
+does not implement the Taylor \code{"adjust"} or \code{"average"} rules.}
 }
 \value{
 A named list with the following components (harmonized with \code{\link[=oby_decomp]{oby_decomp()}}):
@@ -368,6 +380,20 @@ each stratum it samples \eqn{n_h-1} PSUs with replacement and multiplies
 their sampling weights by \eqn{n_h/(n_h-1)}. Its final non-MSE variance uses
 Stata's \eqn{1/B} convention; the generator's native finite-replicate scale
 is retained in \code{raw$replication$generator_scale}.
+
+\code{lonely_psu} does not control the construction of Rao--Wu bootstrap
+replicates. Use \code{bootstrap_singleton} for that purpose. With
+\code{bootstrap_singleton = "fail"} (the default), a singleton-PSU stratum stops
+survey bootstrap estimation. With \code{bootstrap_singleton = "certainty"},
+\code{\link[svrep:as_bootstrap_design]{svrep::as_bootstrap_design()}} generates Rao--Wu--Yue--Beaumont replicate
+weights and holds the singleton PSU fixed with replicate factor 1. This
+assigns zero first-stage variance to that stratum and should therefore be
+selected only when treating the singleton as a certainty PSU is
+substantively defensible. Regular strata continue to use Rao--Wu
+\eqn{n_h-1} resampling. \code{lonely_psu} can still affect Taylor covariance
+reported for fitted survey-model coefficients, but it does not determine the
+Fairlie bootstrap VCE.
+
 This Rao--Wu construction assumes simple random sampling of PSUs within
 strata (with the usual with-replacement/ultimate-cluster variance
 approximation). It is not a generic bootstrap for first-stage PPS designs.

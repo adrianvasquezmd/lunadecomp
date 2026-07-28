@@ -32,7 +32,8 @@
     psu = "psu",
     boot_reps = 12L,
     seed = 104732L,
-    lonely_psu = "adjust"
+    lonely_psu = "adjust",
+    bootstrap_singleton = "fail"
 ) {
   wvw_decomp(
     data = data,
@@ -46,6 +47,7 @@
     boot_reps = boot_reps,
     seed = seed,
     lonely_psu = lonely_psu,
+    bootstrap_singleton = bootstrap_singleton,
     quiet = TRUE
   )
 }
@@ -371,6 +373,75 @@ test_that("phase 10 rejects singleton strata for survey replication", {
       info = method
     )
   }
+})
+
+test_that("phase 10 bootstrap supports singleton certainty through svrep", {
+  data <- .phase10_wvw_data(4L)
+  data$psu[data$strata == 1] <- 1
+  bootstrap_reps <- 12L
+
+  fit <- .phase10_wvw_fit(
+    data = data,
+    method = "bootstrap",
+    boot_reps = bootstrap_reps,
+    bootstrap_singleton = "certainty"
+  )
+  replication <- fit$raw$replication
+
+  expect_identical(
+    replication$engine,
+    "svrep::as_bootstrap_design"
+  )
+  expect_identical(
+    replication$survey_replicate_type,
+    "Rao-Wu-Yue-Beaumont bootstrap with singleton certainty"
+  )
+  expect_true(replication$bootstrap_singleton$applied)
+  expect_equal(replication$bootstrap_singleton$n_singleton_strata, 1)
+  expect_equal(replication$generator_scale, 1 / bootstrap_reps)
+  expect_equal(replication$effective_scale, 1 / bootstrap_reps)
+
+  factors <- replication$replicate_factors
+  strata <- unname(fit$raw$design$strata)
+  psu <- unname(fit$raw$design$psu)
+  expect_equal(
+    unname(factors[strata == 1, , drop = FALSE]),
+    matrix(
+      1,
+      nrow = sum(strata == 1),
+      ncol = bootstrap_reps
+    ),
+    tolerance = 1e-12
+  )
+  for (stratum in setdiff(unique(strata), 1)) {
+    rows <- strata == stratum
+    psu_factors <- vapply(
+      split(factors[rows, 1], psu[rows]),
+      function(values) unique(values)[1],
+      numeric(1)
+    )
+    expect_equal(sum(psu_factors), 4, tolerance = 1e-12)
+    expect_equal(
+      psu_factors / (4 / 3),
+      round(psu_factors / (4 / 3)),
+      tolerance = 1e-12
+    )
+  }
+  expect_match(
+    fit$diagnostics$bootstrap_singleton_control,
+    "lonely_psu does not control Rao-Wu bootstrap"
+  )
+  expect_match(
+    fit$diagnostics$bootstrap_singleton_assumption,
+    "zero first-stage variance"
+  )
+})
+
+test_that("phase 10 validates bootstrap_singleton independently", {
+  expect_error(
+    .phase10_wvw_fit(bootstrap_singleton = "average"),
+    "bootstrap_singleton must be"
+  )
 })
 
 test_that("phase 10 distinguishes simple-weight inference by VCE", {

@@ -26,7 +26,8 @@ oby_decomp(
   quiet = FALSE,
   normalize = NULL,
   group_levels = NULL,
-  pooled_anchor = "favored"
+  pooled_anchor = "favored",
+  bootstrap_singleton = "fail"
 )
 }
 \arguments{
@@ -88,7 +89,9 @@ fitting each replicate. Survey bootstrap continues to use replicate weights
 generated from the declared survey design.}
 
 \item{lonely_psu}{Character string. Handling of strata with one PSU. Options
-are \code{"fail"}, \code{"remove"}, \code{"certainty"}, \code{"adjust"}, and \code{"average"}.}
+are \code{"fail"}, \code{"remove"}, \code{"certainty"}, \code{"adjust"}, and \code{"average"}.
+This controls linearized survey covariance and jackknife conversions; it
+does not control Rao--Wu bootstrap replicate construction.}
 
 \item{level}{Numeric. Confidence level for confidence intervals. Default is
 \code{0.95}.}
@@ -124,6 +127,13 @@ indicator used to construct the pooled reference coefficients. Options are
 mean (or survey-weighted population mean when weights are supplied).
 This argument is used only when \code{ref_method = "pooled"}. It can materially
 change Logit/Probit decompositions; OLS/LPM decompositions are invariant.}
+
+\item{bootstrap_singleton}{Character string. Handling of a stratum with one
+PSU in survey bootstrap. Options are \code{"fail"} (the default) and
+\code{"certainty"}. \code{"fail"} requires at least two PSUs per stratum and stops
+rather than making an assumption. \code{"certainty"} uses
+\code{\link[svrep:as_bootstrap_design]{svrep::as_bootstrap_design()}} and fixes the singleton at replicate factor
+1, assigning zero first-stage variance to that stratum.}
 }
 \value{
 A named list with the following components:
@@ -397,9 +407,15 @@ weights by \eqn{n_h/(n_h-1)}. Its final variance uses Stata's
 variable: deviations from the replicate mean with scale \eqn{1/B}. The
 native \code{survey} generator scale \eqn{1/(B-1)} is retained in
 \code{raw$replication$generator_scale} for auditability. Rao--Wu requires at
-least two PSUs in every stratum and assumes simple or stratified random
-sampling of PSUs under the ultimate-cluster/with-replacement approximation;
-it is not a first-stage PPS bootstrap.
+least two PSUs in every stratum unless
+\code{bootstrap_singleton = "certainty"} is selected. In that case,
+\code{\link[svrep:as_bootstrap_design]{svrep::as_bootstrap_design()}} generates Rao--Wu--Yue--Beaumont weights,
+holds each singleton PSU fixed with replicate factor 1, and assigns it zero
+first-stage variance. Regular strata retain Rao--Wu \eqn{n_h-1} resampling.
+This should be selected only when treating the singleton as a certainty PSU
+is substantively defensible. The construction assumes simple or stratified
+random sampling of PSUs under the ultimate-cluster/with-replacement
+approximation; it is not a first-stage PPS bootstrap.
 
 Ordinary and unstratified jackknife variances use the replicate-mean
 convention. Stratified JKn uses stratum-specific replicate means, which is
