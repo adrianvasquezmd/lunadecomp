@@ -1,0 +1,57 @@
+Package: lunadecomp
+Title: Decomposition Methods for Health Inequality
+Version: 0.1.0
+Authors@R: c(
+    person(
+        given = "Adrian",
+        family = "Vasquez-Mejia",
+        email = "apvasquez.md@gmail.com",
+        role = c("aut", "cre", "cph"),
+        comment = c("Lead developer and principal author")
+    ),
+    person(
+        given = "Oscar J.",
+        family = "Mujica",
+        role = "aut",
+        comment = c("Conceptual contribution and scientific review")
+    ),
+    person(
+        given = "Antonio",
+        family = "Sanhueza",
+        role = "aut",
+        comment = c("Conceptual contribution and scientific review")
+    )
+    )
+Description: Provides tools to decompose health inequality using regression-based,
+    nonlinear, and concentration-index-based methods. The package is designed for
+    applied health inequality monitoring and public health research, with support
+    for complex survey designs, model diagnostics, grouped decomposition outputs,
+    and reproducible statistical workflows.
+License: AGPL (>= 3)
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 8.0.0
+Imports:
+    boot,
+    dplyr,
+    resample,
+    tidyr,
+    tibble,
+    rlang,
+    survey,
+    MASS,
+    Matrix,
+    stats,
+    utils
+Suggests:
+    testthat,
+    ggplot2,
+    pkgdown,
+    covr,
+    rineq
+Config/testthat/edition: 3
+Depends:
+    R (>= 3.5)
+LazyData: true
+URL: https://github.com/adrianvasquezmd/lunadecomp
+BugReports: https://github.com/adrianvasquezmd/lunadecomp/issues

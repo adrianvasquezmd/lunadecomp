@@ -1,0 +1,12 @@
+bibentry(
+  bibtype = "Manual",
+  title = "lunadecomp: Decomposition Methods for Health Inequality",
+  author = c(
+    person("Adrián", "Vásquez-Mejía"),
+    person("Oscar J.", "Mujica"),
+    person("Antonio", "Sanhueza")
+  ),
+  year = "2026",
+  note = "R package version 0.1.0",
+  url = "https://github.com/adrianvasquezmd/lunadecomp"
+)

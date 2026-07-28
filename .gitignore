@@ -1,0 +1,89 @@
+# -----------------------------------------------------------------------------
+# Local research and validation material (never publish)
+# -----------------------------------------------------------------------------
+bibliography/
+comparison_stata/
+referencia_wvw/
+validation/
+artifacts/
+phases/
+phase*.log
+private/
+data-private/
+secrets/
+
+# The project intentionally has no gh-pages branch. Keep the local workflow
+# available for reference without publishing an action that recreates it.
+.github/workflows/pkgdown.yaml
+.github/.gitignore
+_pkgdown.yml
+
+# -----------------------------------------------------------------------------
+# R, RStudio, package builds, checks, coverage, and generated documentation
+# -----------------------------------------------------------------------------
+.Rproj.user/
+*.Rproj
+.Rhistory
+.RData
+.Ruserdata
+.httr-oauth
+.Rcheck/
+*.Rcheck/
+..Rcheck/
+*.tar.gz
+stdin.log
+stdin.log.*
+.covr/
+coverage/
+docs/
+pkgdown/
+.quarto/
+_freeze/
+renv/library/
+renv/staging/
+
+# -----------------------------------------------------------------------------
+# Environment, authentication, and credentials
+# -----------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+!.env.sample
+.Renviron
+.Renviron.*
+!.Renviron.example
+.envrc
+.netrc
+credentials.*
+secrets.*
+*_credentials.*
+*_secret.*
+*_token.*
+
+# Private keys and local credential stores
+*.pem
+*.key
+*.p12
+*.pfx
+*.kdbx
+id_rsa
+id_rsa.*
+id_ed25519
+id_ed25519.*
+
+# Local databases
+*.db
+*.sqlite
+*.sqlite3
+
+# -----------------------------------------------------------------------------
+# Operating-system and editor files
+# -----------------------------------------------------------------------------
+.DS_Store
+Thumbs.db
+Desktop.ini
+*~
+*.swp
+*.swo
+.vscode/
+.idea/
