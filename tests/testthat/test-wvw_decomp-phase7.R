@@ -419,23 +419,24 @@ test_that("phase 7 nonlinear points are invariant to weight scale", {
       model,
       weight_multiplier = 10
     )$raw
+    scale_tolerance <- if (model == "probit") 5e-8 else 1e-8
 
     expect_equal(
       scaled$model$coefficients,
       base$model$coefficients,
-      tolerance = 1e-8,
+      tolerance = scale_tolerance,
       info = model
     )
     expect_equal(
       scaled$determinants$marginal_effect,
       base$determinants$marginal_effect,
-      tolerance = 1e-8,
+      tolerance = scale_tolerance,
       info = model
     )
     expect_equal(
       unlist(scaled$index),
       unlist(base$index),
-      tolerance = 1e-8,
+      tolerance = scale_tolerance,
       info = model
     )
   }

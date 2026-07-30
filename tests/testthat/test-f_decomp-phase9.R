@@ -100,7 +100,7 @@ test_that("group models retain the full design before domain selection", {
     y ~ x1 + x2,
     design = domain_design,
     family = stats::quasibinomial(link = "logit"),
-    control = stats::glm.control(epsilon = 1e-16, maxit = 100)
+    control = stats::glm.control(epsilon = 1e-12, maxit = 100)
   )
 
   expect_equal(

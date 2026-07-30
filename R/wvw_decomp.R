@@ -54,7 +54,7 @@
 #' decomposition need not equal the factor-based result.
 #'
 #' Logit and probit models use a tightened Fisher-scoring criterion
-#' (`epsilon = 1e-16`, `maxit = 100`) to avoid preventable differences from
+#' (`epsilon = 1e-12`, `maxit = 100`) to avoid preventable differences from
 #' Stata caused by the looser [stats::glm.fit()] default. Samples exhibiting
 #' perfect classification with extreme coefficients are rejected because the
 #' finite maximum-likelihood coefficients do not exist.
@@ -1353,7 +1353,7 @@ wvw_decomp <- function(
   # oby_decomp() and f_decomp(). The glm.fit() default deviance tolerance can
   # stop probit several Fisher-scoring steps before Stata's solution.
   fit_control <- stats::glm.control(
-    epsilon = if (model_type %in% c("logit", "probit")) 1e-16 else 1e-8,
+    epsilon = if (model_type %in% c("logit", "probit")) 1e-12 else 1e-8,
     maxit = if (model_type %in% c("logit", "probit")) 100 else 25
   )
 

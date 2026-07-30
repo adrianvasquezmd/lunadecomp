@@ -1373,7 +1373,7 @@ oby_decomp <- function(
   # probit estimates instead of stopping at glm.fit()'s comparatively loose
   # default deviance tolerance.
   fit_control <- stats::glm.control(
-    epsilon = if (model_type %in% c("logit", "probit")) 1e-16 else 1e-8,
+    epsilon = if (model_type %in% c("logit", "probit")) 1e-12 else 1e-8,
     maxit = if (model_type %in% c("logit", "probit")) 100 else 25
   )
 

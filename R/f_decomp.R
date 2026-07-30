@@ -1231,7 +1231,7 @@ f_decomp <- function(
   strata_f <- if (is.null(strata_var)) NULL else stats::as.formula(paste0("~", strata_var))
   form_reg <- stats::as.formula(paste(dep_var, "~", paste(indep_vars, collapse = " + ")))
   fit_control <- stats::glm.control(
-    epsilon = if (exact_collinearity) 1e-8 else 1e-16,
+    epsilon = if (exact_collinearity) 1e-8 else 1e-12,
     maxit = 100
   )
 
@@ -1506,7 +1506,7 @@ f_decomp <- function(
           dataset[[w_col]] > 0, ]
         m0 <- suppressWarnings(survey::svyglm(
           form_reg, design = d_g0, family = fam,
-          control = stats::glm.control(epsilon = 1e-16, maxit = 100)
+          control = stats::glm.control(epsilon = 1e-12, maxit = 100)
         ))
         e0 <- extract_cv(
           m0,
@@ -1524,7 +1524,7 @@ f_decomp <- function(
           dataset[[w_col]] > 0, ]
         m1 <- suppressWarnings(survey::svyglm(
           form_reg, design = d_g1, family = fam,
-          control = stats::glm.control(epsilon = 1e-16, maxit = 100)
+          control = stats::glm.control(epsilon = 1e-12, maxit = 100)
         ))
         e1 <- extract_cv(
           m1,
@@ -1540,7 +1540,7 @@ f_decomp <- function(
       if (ref_method == "neumark") {
         m_ref <- suppressWarnings(survey::svyglm(
           form_reg, design = d_all, family = fam,
-          control = stats::glm.control(epsilon = 1e-16, maxit = 100)
+          control = stats::glm.control(epsilon = 1e-12, maxit = 100)
         ))
         er <- extract_cv(
           m_ref,
@@ -1553,7 +1553,7 @@ f_decomp <- function(
       } else if (ref_method == "pooled") {
         m_ref <- suppressWarnings(survey::svyglm(
           form_pool, design = d_all, family = fam,
-          control = stats::glm.control(epsilon = 1e-16, maxit = 100)
+          control = stats::glm.control(epsilon = 1e-12, maxit = 100)
         ))
         er <- extract_cv(
           m_ref,

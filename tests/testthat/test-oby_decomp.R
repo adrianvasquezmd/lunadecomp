@@ -454,7 +454,7 @@ test_that("nonlinear linearized VCE uses Stata-compatible ML sandwiches", {
       X,
       group_data$y,
       family = family,
-      control = stats::glm.control(epsilon = 1e-16, maxit = 100)
+      control = stats::glm.control(epsilon = 1e-12, maxit = 100)
     )
     mu <- pmin(pmax(model$fitted.values, 1e-15), 1 - 1e-15)
     eta <- model$linear.predictors
@@ -504,7 +504,7 @@ test_that("nonlinear linearized VCE uses Stata-compatible ML sandwiches", {
     X,
     probit_data$y,
     family = stats::binomial(link = "probit"),
-    control = stats::glm.control(epsilon = 1e-16, maxit = 100)
+    control = stats::glm.control(epsilon = 1e-12, maxit = 100)
   )
   mu <- model$fitted.values
   fisher_bread <- MASS::ginv(crossprod(

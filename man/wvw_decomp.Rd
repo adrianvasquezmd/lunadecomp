@@ -206,7 +206,7 @@ same likelihood and fitted values, its nonlinear marginal effects and
 decomposition need not equal the factor-based result.
 
 Logit and probit models use a tightened Fisher-scoring criterion
-(\code{epsilon = 1e-16}, \code{maxit = 100}) to avoid preventable differences from
+(\code{epsilon = 1e-12}, \code{maxit = 100}) to avoid preventable differences from
 Stata caused by the looser \code{\link[stats:glm.fit]{stats::glm.fit()}} default. Samples exhibiting
 perfect classification with extreme coefficients are rejected because the
 finite maximum-likelihood coefficients do not exist.

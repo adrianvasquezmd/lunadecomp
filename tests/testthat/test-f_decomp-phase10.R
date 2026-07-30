@@ -205,13 +205,13 @@ test_that("Cotton reference weight stays fixed inside jackknife replicates", {
     y ~ x1 + x2 + x3,
     data = deleted_first[deleted_first$group == 0, ],
     family = family,
-    control = stats::glm.control(epsilon = 1e-16, maxit = 100)
+    control = stats::glm.control(epsilon = 1e-12, maxit = 100)
   )
   model1 <- stats::glm(
     y ~ x1 + x2 + x3,
     data = deleted_first[deleted_first$group == 1, ],
     family = family,
-    control = stats::glm.control(epsilon = 1e-16, maxit = 100)
+    control = stats::glm.control(epsilon = 1e-12, maxit = 100)
   )
   X <- stats::model.matrix(~x1 + x2 + x3, data = deleted_first)
   fixed_weight <- 0.5
