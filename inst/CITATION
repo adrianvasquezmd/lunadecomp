@@ -1,0 +1,10 @@
+authors <- eval(parse(text = meta$`Authors@R`))
+
+bibentry(
+  bibtype = "Manual",
+  title = paste0(meta$Package, ": ", meta$Title),
+  author = authors[vapply(authors, function(x) "aut" %in% x$role, logical(1))],
+  year = "2026",
+  note = paste("R package version", meta$Version),
+  url = meta$URL
+)

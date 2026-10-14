@@ -1,0 +1,100 @@
+lunadecomp: copyright and third-party notices
+
+Package: lunadecomp
+License: GNU Affero General Public License, version 3 or later
+SPDX-License-Identifier: AGPL-3.0-or-later
+
+Original lunadecomp code and package materials
+--------------------------------------------
+Copyright (C) 2026 Adrián Vásquez-Mejía
+
+Package authors: Adrián Vásquez-Mejía, Oscar J. Mujica, and Antonio Sanhueza.
+Adrián Vásquez-Mejía is the lead developer and maintainer. Oscar J. Mujica
+and Antonio Sanhueza contributed to the conceptual framework and scientific
+review. Package authorship does not replace the third-party rights below.
+
+lunadecomp is free software: you can redistribute it and/or modify it under
+the terms of the GNU Affero General Public License as published by the
+Free Software Foundation, either version 3 of the License, or (at your
+option) any later version.
+
+lunadecomp is distributed in the hope that it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public
+License for more details.
+
+The full license is in LICENSE.md in the repository and in the R
+distribution at share/licenses/AGPL-3. It is also available at:
+https://www.gnu.org/licenses/agpl-3.0.html
+https://www.R-project.org/Licenses/AGPL-3
+
+Adapted Stata implementations by Ben Jann
+---------------------------------------
+R/oby_decomp.R translates and adapts decomposition calculations from
+Ben Jann's oaxaca, version 4.1.1 (24 April 2023).
+Source: https://github.com/benjann/oaxaca
+Reference revision: 764cfc4b35e04a4e2ff3f5695403c151abc73dfa
+License: https://github.com/benjann/oaxaca/blob/764cfc4b35e04a4e2ff3f5695403c151abc73dfa/LICENSE
+
+R/f_decomp.R draws on and adapts Ben Jann's fairlie, version 1.0.7
+(16 June 2008), including weighted matching and detailed variance
+calculations. The reference snapshot is dated 27 February 2023.
+Source: https://github.com/benjann/fairlie
+Reference revision: 0b859354d643a93d2d49650e4d478db453f32d87
+License: https://github.com/benjann/fairlie/blob/0b859354d643a93d2d49650e4d478db453f32d87/LICENSE
+
+The R adaptations and extensions form part of lunadecomp. The original
+portions retain the following MIT notice, identical in both repositories:
+
+MIT License
+
+Copyright (c) 2023 Ben Jann
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+Methodological and validation credits
+-------------------------------------
+The decomposition methods are credited in the function help pages and
+README. Their authors are distinct from the authors of this R package.
+
+R/wvw_decomp.R follows Wagstaff, van Doorslaer, and Watanabe (2003).
+O'Donnell, van Doorslaer, Wagstaff, and Lindelow (2008), Analyzing Health
+Equity Using Household Survey Data, Chapter 13, and its AHE13.do example
+served as implementation references.
+https://doi.org/10.1596/978-0-8213-6933-3
+
+Validation comparisons used rineq 0.3.0 (Brecht Devleesschauwer, Saveria
+Willimès, Carine Van Malderen, Peter Konings, Niko Speybroeck, and Kaspar
+Meili) and conindex 1.7 (Owen O'Donnell, Stephen O'Neill, Tom Van Ourti,
+and Brendan Walsh). These are credited as comparison tools; their source
+code and reference datasets are not bundled with lunadecomp.
+https://doi.org/10.32614/CRAN.package.rineq
+https://www.stata-journal.com/article.html?article=st0427
+
+R/ke_decomp.R implements the direct-regression approach of Roselinde
+Kessels and Guido Erreygers (2019). Its covariance and survey extensions
+are documented separately from the article's method.
+https://doi.org/10.1002/hec.3891
+
+Survey calculations use survey (Thomas Lumley) and svrep (Benjamin
+Schneider). Other dependencies are listed in DESCRIPTION and retain
+their respective licenses and authorship.
+
+The bundled lunadecomp_example dataset is simulated for package examples
+and tests. It is not the World Bank reference dataset.
